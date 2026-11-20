@@ -440,7 +440,7 @@ routesList.CanvasSize = UDim2.new(
 end)
 
 local status = create("TextLabel", {
-Size = UDim2.new(1, -20, 0, 22),
+Size = UDim2.new(0, 480, 0, 22),
 Position = UDim2.new(0, 10, 0, 488),
 BackgroundTransparency = 1,
 Text = "Status: Ready",
