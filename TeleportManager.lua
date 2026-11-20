@@ -17,6 +17,7 @@ local running = false
 local runToken = 0
 local activeRouteId = nil
 local activeRouteButton = nil
+local editingRouteId = nil
 
 local units = {"ms", "sec", "min"}
 
@@ -40,8 +41,8 @@ ResetOnSpawn = false
 }, playerGui)
 
 local main = create("Frame", {
-Size = UDim2.new(0, 595, 0, 472),
-Position = UDim2.new(0.5, -297.5, 0.5, -236),
+Size = UDim2.new(0, 700, 0, 555),
+Position = UDim2.new(0.5, -350, 0.5, -277.5),
 BackgroundColor3 = Color3.fromRGB(27, 30, 39),
 BorderSizePixel = 0
 }, gui)
@@ -64,7 +65,8 @@ Font = Enum.Font.GothamBold
 create("UICorner", {CornerRadius = UDim.new(0, 10)}, header)
 
 -- Draggable windows
-local function makeDraggable(object)
+local function makeDraggable(object, dragTarget)
+dragTarget = dragTarget or object
 local dragging = false
 local dragStart
 local startPosition
@@ -75,7 +77,7 @@ object.InputBegan:Connect(function(input)
 
         dragging = true  
         dragStart = input.Position  
-        startPosition = object.Position  
+        startPosition = dragTarget.Position  
     end  
 end)  
 
@@ -86,7 +88,7 @@ UIS.InputChanged:Connect(function(input)
     ) then  
         local delta = input.Position - dragStart  
 
-        object.Position = UDim2.new(  
+        dragTarget.Position = UDim2.new(  
             startPosition.X.Scale,  
             startPosition.X.Offset + delta.X,  
             startPosition.Y.Scale,  
@@ -104,26 +106,26 @@ end)
 
 end
 
-makeDraggable(header)
+makeDraggable(header, main)
 
 -- Always-visible toggle button
 local toggleButton = create("TextButton", {
-Size = UDim2.new(0, 125, 0, 38),
+Size = UDim2.new(0, 46, 0, 46),
 Position = UDim2.new(0, 15, 0.35, 0),
 BackgroundColor3 = Color3.fromRGB(65, 105, 180),
-Text = "HIDE MENU",
+Text = "−",
 TextColor3 = Color3.new(1, 1, 1),
 TextSize = 13,
 Font = Enum.Font.GothamBold,
 BorderSizePixel = 0
 }, gui)
 
-create("UICorner", {CornerRadius = UDim.new(0, 8)}, toggleButton)
+create("UICorner", {CornerRadius = UDim.new(1, 0)}, toggleButton)
 makeDraggable(toggleButton)
 
 toggleButton.MouseButton1Click:Connect(function()
 main.Visible = not main.Visible
-toggleButton.Text = main.Visible and "HIDE MENU" or "SHOW MENU"
+toggleButton.Text = main.Visible and "−" or "+"
 end)
 
 local function makeButton(parent, text, size, position, color)
@@ -437,6 +439,10 @@ for index, step in ipairs(sequence) do
     end)  
 end
 
+    task.defer(function()
+        local bottom = math.max(0, sequenceList.AbsoluteCanvasSize.Y - sequenceList.AbsoluteSize.Y)
+        sequenceList.CanvasPosition = Vector2.new(0, bottom)
+    end)
 end
 
 -- Add a point to the route sequence.
@@ -541,11 +547,36 @@ for index, route in ipairs(routes) do
     local playButton = makeButton(  
         row,  
         "PLAY: " .. currentRoute.name,  
-        UDim2.new(1, -85, 1, -4),  
+        UDim2.new(1, -130, 1, -4),  
         UDim2.new(0, 3, 0, 2),  
         Color3.fromRGB(40, 125, 85)  
     )  
     playButton.TextTruncate = Enum.TextTruncate.AtEnd  
+
+    local editButton = makeButton(
+        row,
+        "EDIT",
+        UDim2.new(0, 58, 1, -4),
+        UDim2.new(1, -124, 0, 2),
+        Color3.fromRGB(75, 105, 155)
+    )
+
+    editButton.MouseButton1Click:Connect(function()
+        sequence = {}
+        for _, step in ipairs(currentRoute.steps) do
+            table.insert(sequence, {
+                pointId = step.pointId,
+                name = step.name,
+                delay = step.delay,
+                unit = step.unit
+            })
+        end
+        editingRouteId = currentRoute.id
+        routeName.Text = currentRoute.name
+        saveRouteButton.Text = "UPDATE ROUTE"
+        refreshSequence()
+        status.Text = "Status: Editing - " .. currentRoute.name
+    end)
 
     playButton.MouseButton1Click:Connect(function()
         if running and activeRouteId == currentRoute.id then
@@ -633,12 +664,19 @@ for index, route in ipairs(routes) do
     local deleteButton = makeButton(  
         row,  
         "DELETE",  
-        UDim2.new(0, 78, 1, -4),  
-        UDim2.new(1, -81, 0, 2),  
+        UDim2.new(0, 58, 1, -4),
+        UDim2.new(1, -63, 0, 2),  
         Color3.fromRGB(170, 55, 55)  
     )  
 
-    deleteButton.MouseButton1Click:Connect(function()  
+    deleteButton.MouseButton1Click:Connect(function()
+        if editingRouteId == currentRoute.id then
+            editingRouteId = nil
+            sequence = {}
+            routeName.Text = ""
+            saveRouteButton.Text = "SAVE ROUTE"
+            refreshSequence()
+        end
         for i, saved in ipairs(routes) do  
             if saved.id == currentRoute.id then  
                 table.remove(routes, i)  
@@ -683,46 +721,53 @@ status.Text = "Status: Point saved - " .. name
 
 end)
 
--- Save route with individual step delays
+-- Save a new route or update the route currently being edited
 saveRouteButton.MouseButton1Click:Connect(function()
 if #sequence == 0 then
 status.Text = "Status: Add at least one step"
 return
 end
 
-local name = routeName.Text  
+local name = routeName.Text
+if name == "" then
+    name = "Route " .. tostring(#routes + 1)
+end
 
-if name == "" then  
-    name = "Route " .. tostring(#routes + 1)  
-end  
+local savedSteps = {}
+for _, step in ipairs(sequence) do
+    table.insert(savedSteps, {
+        pointId = step.pointId,
+        name = step.name,
+        delay = step.delay,
+        unit = step.unit
+    })
+end
 
-local savedSteps = {}  
+if editingRouteId then
+    for _, route in ipairs(routes) do
+        if route.id == editingRouteId then
+            route.name = name
+            route.steps = savedSteps
+            break
+        end
+    end
+    editingRouteId = nil
+    status.Text = "Status: Route updated - " .. name
+else
+    nextRouteId += 1
+    table.insert(routes, {
+        id = nextRouteId,
+        name = name,
+        steps = savedSteps
+    })
+    status.Text = "Status: Route saved - " .. name
+end
 
-for _, step in ipairs(sequence) do  
-    table.insert(savedSteps, {  
-        pointId = step.pointId,  
-        name = step.name,  
-        delay = step.delay,  
-        unit = step.unit  
-    })  
-end  
-
-nextRouteId += 1  
-
-table.insert(routes, {  
-    id = nextRouteId,  
-    name = name,  
-    steps = savedSteps  
-})  
-
-sequence = {}  
-
-routeName.Text = ""  
-refreshSequence()  
-refreshRoutes()  
-
-status.Text = "Status: Route saved - " .. name
-
+sequence = {}
+routeName.Text = ""
+saveRouteButton.Text = "SAVE ROUTE"
+refreshSequence()
+refreshRoutes()
 end)
 
 -- Stop auto teleport
