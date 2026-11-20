@@ -165,9 +165,9 @@ ResetOnSpawn = false
 }, playerGui)
 
 local main = create("Frame", {
-Size = UDim2.new(0, 700, 0, 555),
-Position = UDim2.new(0.5, -350, 0.5, -277.5),
-BackgroundColor3 = Color3.fromRGB(27, 30, 39),
+Size = UDim2.new(0, 700, 0, 525),
+Position = UDim2.new(0.5, -350, 0.5, -262.5),
+BackgroundColor3 = Color3.fromRGB(18, 24, 38),
 BorderSizePixel = 0
 }, gui)
 
@@ -179,7 +179,7 @@ create("UICorner", {CornerRadius = UDim.new(0, 10)}, main)
 
 local header = create("TextLabel", {
 Size = UDim2.new(1, 0, 0, 38),
-BackgroundColor3 = Color3.fromRGB(45, 49, 62),
+BackgroundColor3 = Color3.fromRGB(31, 43, 62),
 Text = "TELEPORT MANAGER",
 TextColor3 = Color3.new(1, 1, 1),
 TextSize = 17,
@@ -234,22 +234,23 @@ makeDraggable(header, main)
 
 -- Always-visible toggle button
 local toggleButton = create("TextButton", {
-Size = UDim2.new(0, 46, 0, 46),
+Size = UDim2.new(0, 82, 0, 42),
 Position = UDim2.new(0, 15, 0.35, 0),
-BackgroundColor3 = Color3.fromRGB(65, 105, 180),
-Text = "−",
+BackgroundColor3 = Color3.fromRGB(36, 91, 115),
+Text = "GOAT",
 TextColor3 = Color3.new(1, 1, 1),
-TextSize = 13,
-Font = Enum.Font.GothamBold,
+TextSize = 14,
+Font = Enum.Font.GothamBlack,
 BorderSizePixel = 0
 }, gui)
 
-create("UICorner", {CornerRadius = UDim.new(1, 0)}, toggleButton)
+create("UICorner", {CornerRadius = UDim.new(0, 13)}, toggleButton)
+create("UIStroke", {Color = Color3.fromRGB(75, 190, 190), Thickness = 1.4, Transparency = 0.15}, toggleButton)
 makeDraggable(toggleButton)
 
 toggleButton.MouseButton1Click:Connect(function()
 main.Visible = not main.Visible
-toggleButton.Text = main.Visible and "−" or "+"
+toggleButton.Text = "GOAT"
 end)
 
 local function makeButton(parent, text, size, position, color)
@@ -273,7 +274,7 @@ local function makeBox(parent, placeholder, size, position, defaultText)
 local box = create("TextBox", {
 Size = size,
 Position = position,
-BackgroundColor3 = Color3.fromRGB(48, 51, 62),
+BackgroundColor3 = Color3.fromRGB(34, 46, 64),
 TextColor3 = Color3.new(1, 1, 1),
 PlaceholderColor3 = Color3.fromRGB(175, 175, 175),
 PlaceholderText = placeholder,
@@ -304,14 +305,14 @@ end
 
 -- Two side-by-side panels
 local left = create("Frame", {
-Size = UDim2.new(0, 330, 0, 490),
+Size = UDim2.new(0, 330, 0, 465),
 Position = UDim2.new(0, 10, 0, 48),
-BackgroundColor3 = Color3.fromRGB(35, 38, 48),
+BackgroundColor3 = Color3.fromRGB(25, 35, 51),
 BorderSizePixel = 0
 }, main)
 
 local right = create("Frame", {
-Size = UDim2.new(0, 340, 0, 490),
+Size = UDim2.new(0, 340, 0, 465),
 Position = UDim2.new(0, 350, 0, 48),
 BackgroundColor3 = Color3.fromRGB(35, 38, 48),
 BorderSizePixel = 0
@@ -339,9 +340,9 @@ Color3.fromRGB(40, 145, 90)
 )
 
 local pointsList = create("ScrollingFrame", {
-Size = UDim2.new(1, -16, 0, 405),
+Size = UDim2.new(1, -16, 0, 380),
 Position = UDim2.new(0, 8, 0, 73),
-BackgroundColor3 = Color3.fromRGB(29, 32, 41),
+BackgroundColor3 = Color3.fromRGB(18, 27, 41),
 BorderSizePixel = 0,
 ScrollBarThickness = 5,
 CanvasSize = UDim2.new(0, 0, 0, 0)
@@ -380,7 +381,9 @@ Size = UDim2.new(1, -16, 0, 175),
 Position = UDim2.new(0, 8, 0, 63),
 BackgroundColor3 = Color3.fromRGB(29, 32, 41),
 BorderSizePixel = 0,
-ScrollBarThickness = 5,
+ScrollBarThickness = 6,
+ScrollBarImageColor3 = Color3.fromRGB(75, 190, 190),
+AutomaticCanvasSize = Enum.AutomaticSize.Y,
 CanvasSize = UDim2.new(0, 0, 0, 0)
 }, right)
 
@@ -438,7 +441,7 @@ end)
 
 local status = create("TextLabel", {
 Size = UDim2.new(1, -20, 0, 22),
-Position = UDim2.new(0, 10, 0, 520),
+Position = UDim2.new(0, 10, 0, 488),
 BackgroundTransparency = 1,
 Text = "Status: Ready",
 TextColor3 = Color3.fromRGB(220, 220, 220),
@@ -450,7 +453,7 @@ local stopButton = makeButton(
 main,
 "STOP AUTO TELEPORT",
 UDim2.new(0, 180, 0, 28),
-UDim2.new(1, -190, 0, 517),
+UDim2.new(1, -190, 0, 484),
 Color3.fromRGB(170, 55, 55)
 )
 
@@ -484,7 +487,7 @@ for index, step in ipairs(sequence) do
 
     local row = create("Frame", {  
         Size = UDim2.new(1, -8, 0, 36),  
-        BackgroundColor3 = Color3.fromRGB(49, 52, 64),  
+        BackgroundColor3 = Color3.fromRGB(38, 52, 72),  
         BorderSizePixel = 0,  
         LayoutOrder = index  
     }, sequenceList)  
@@ -564,6 +567,7 @@ for index, step in ipairs(sequence) do
 end
 
     task.defer(function()
+        task.wait()
         local bottom = math.max(0, sequenceList.AbsoluteCanvasSize.Y - sequenceList.AbsoluteSize.Y)
         sequenceList.CanvasPosition = Vector2.new(0, bottom)
     end)
@@ -674,7 +678,7 @@ for index, route in ipairs(routes) do
         "PLAY: " .. currentRoute.name,  
         UDim2.new(1, -130, 1, -4),  
         UDim2.new(0, 3, 0, 2),  
-        Color3.fromRGB(40, 125, 85)  
+        Color3.fromRGB(190, 65, 75)  
     )  
     playButton.TextTruncate = Enum.TextTruncate.AtEnd  
 
@@ -710,6 +714,7 @@ for index, route in ipairs(routes) do
             activeRouteId = nil
             activeRouteButton = nil
             playButton.Text = "PLAY: " .. currentRoute.name
+            playButton.BackgroundColor3 = Color3.fromRGB(190, 65, 75)
             status.Text = "Status: Auto teleport stopped - " .. currentRoute.name
             return
         end
@@ -751,6 +756,7 @@ for index, route in ipairs(routes) do
 
         if activeRouteButton then
             activeRouteButton.Text = "PLAY: " .. activeRouteButton:GetAttribute("RouteName")
+            activeRouteButton.BackgroundColor3 = Color3.fromRGB(190, 65, 75)
         end
 
         local myToken = runToken
@@ -759,6 +765,7 @@ for index, route in ipairs(routes) do
         activeRouteButton = playButton
         activeRouteButton:SetAttribute("RouteName", currentRoute.name)
         playButton.Text = "STOP: " .. currentRoute.name
+        playButton.BackgroundColor3 = Color3.fromRGB(35, 160, 105)
 
         status.Text = "Status: Running - " .. currentRoute.name  
 
@@ -906,6 +913,7 @@ activeRouteId = nil
 
 if activeRouteButton then
     activeRouteButton.Text = "PLAY: " .. activeRouteButton:GetAttribute("RouteName")
+    activeRouteButton.BackgroundColor3 = Color3.fromRGB(190, 65, 75)
     activeRouteButton = nil
 end
 
