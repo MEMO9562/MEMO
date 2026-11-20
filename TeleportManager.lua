@@ -13,6 +13,130 @@ local sequence = {}
 local nextPointId = 0
 local nextRouteId = 0
 
+-- Persistent data (Delta file functions are used when available)
+local HttpService = game:GetService("HttpService")
+local DATA_FILE = "TeleportManager_Data.json"
+local persistenceAvailable = type(readfile) == "function" and type(writefile) == "function"
+
+local function saveData()
+    if not persistenceAvailable then
+        return false
+    end
+
+    local data = {
+        version = 1,
+        points = {},
+        routes = {},
+        nextPointId = nextPointId,
+        nextRouteId = nextRouteId
+    }
+
+    for _, point in ipairs(points) do
+        table.insert(data.points, {
+            id = point.id,
+            name = point.name,
+            x = point.position.X,
+            y = point.position.Y,
+            z = point.position.Z
+        })
+    end
+
+    for _, route in ipairs(routes) do
+        local savedRoute = {
+            id = route.id,
+            name = route.name,
+            steps = {}
+        }
+        for _, step in ipairs(route.steps) do
+            table.insert(savedRoute.steps, {
+                pointId = step.pointId,
+                name = step.name,
+                delay = step.delay,
+                unit = step.unit
+            })
+        end
+        table.insert(data.routes, savedRoute)
+    end
+
+    local ok, encoded = pcall(function()
+        return HttpService:JSONEncode(data)
+    end)
+    if not ok then
+        return false
+    end
+
+    local written = pcall(function()
+        writefile(DATA_FILE, encoded)
+    end)
+    return written
+end
+
+local function loadData()
+    if type(readfile) ~= "function" then
+        return false
+    end
+
+    local ok, raw = pcall(function()
+        return readfile(DATA_FILE)
+    end)
+    if not ok or type(raw) ~= "string" or raw == "" then
+        return false
+    end
+
+    local decodedOk, data = pcall(function()
+        return HttpService:JSONDecode(raw)
+    end)
+    if not decodedOk or type(data) ~= "table" then
+        return false
+    end
+
+    if type(data.points) == "table" then
+        for _, point in ipairs(data.points) do
+            local id = tonumber(point.id)
+            local x, y, z = tonumber(point.x), tonumber(point.y), tonumber(point.z)
+            if id and type(point.name) == "string" and x and y and z then
+                table.insert(points, {
+                    id = id,
+                    name = point.name,
+                    position = Vector3.new(x, y, z)
+                })
+                nextPointId = math.max(nextPointId, id)
+            end
+        end
+    end
+
+    if type(data.routes) == "table" then
+        for _, route in ipairs(data.routes) do
+            local id = tonumber(route.id)
+            if id and type(route.name) == "string" and type(route.steps) == "table" then
+                local loadedRoute = {id = id, name = route.name, steps = {}}
+                for _, step in ipairs(route.steps) do
+                    local pointId = tonumber(step.pointId)
+                    local delay = tonumber(step.delay)
+                    local unit = step.unit
+                    if pointId and type(step.name) == "string" and delay and delay >= 0
+                        and (unit == "ms" or unit == "sec" or unit == "min") then
+                        table.insert(loadedRoute.steps, {
+                            pointId = pointId,
+                            name = step.name,
+                            delay = delay,
+                            unit = unit
+                        })
+                    end
+                end
+                table.insert(routes, loadedRoute)
+                nextRouteId = math.max(nextRouteId, id)
+            end
+        end
+    end
+
+    nextPointId = math.max(nextPointId, tonumber(data.nextPointId) or 0)
+    nextRouteId = math.max(nextRouteId, tonumber(data.nextRouteId) or 0)
+    return true
+end
+
+local dataLoaded = loadData()
+
 local running = false
 local runToken = 0
 local activeRouteId = nil
@@ -522,6 +646,7 @@ for index, point in ipairs(points) do
             end  
         end  
 
+        saveData()
         refreshPoints()  
         status.Text = "Status: Point deleted"  
     end)  
@@ -684,6 +809,7 @@ for index, route in ipairs(routes) do
             end  
         end  
 
+        saveData()
         refreshRoutes()  
     end)  
 end
@@ -714,7 +840,8 @@ table.insert(points, {
     position = root.Position  
 })  
 
-pointName.Text = ""  
+pointName.Text = ""
+saveData()
 refreshPoints()  
 
 status.Text = "Status: Point saved - " .. name
@@ -767,6 +894,7 @@ sequence = {}
 routeName.Text = ""
 saveRouteButton.Text = "SAVE ROUTE"
 refreshSequence()
+saveData()
 refreshRoutes()
 end)
 
