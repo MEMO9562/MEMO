@@ -15,6 +15,8 @@ local nextRouteId = 0
 
 local running = false
 local runToken = 0
+local activeRouteId = nil
+local activeRouteButton = nil
 
 local units = {"ms", "sec", "min"}
 
@@ -38,11 +40,15 @@ ResetOnSpawn = false
 }, playerGui)
 
 local main = create("Frame", {
-Size = UDim2.new(0, 700, 0, 555),
-Position = UDim2.new(0.5, -350, 0.5, -277),
+Size = UDim2.new(0, 595, 0, 472),
+Position = UDim2.new(0.5, -297.5, 0.5, -236),
 BackgroundColor3 = Color3.fromRGB(27, 30, 39),
 BorderSizePixel = 0
 }, gui)
+
+create("UIScale", {
+Scale = 0.85
+}, main)
 
 create("UICorner", {CornerRadius = UDim.new(0, 10)}, main)
 
@@ -541,7 +547,17 @@ for index, route in ipairs(routes) do
     )  
     playButton.TextTruncate = Enum.TextTruncate.AtEnd  
 
-    playButton.MouseButton1Click:Connect(function()  
+    playButton.MouseButton1Click:Connect(function()
+        if running and activeRouteId == currentRoute.id then
+            running = false
+            runToken += 1
+            activeRouteId = nil
+            activeRouteButton = nil
+            playButton.Text = "PLAY: " .. currentRoute.name
+            status.Text = "Status: Auto teleport stopped - " .. currentRoute.name
+            return
+        end
+
         if #currentRoute.steps == 0 then  
             status.Text = "Status: Route is empty"  
             return  
@@ -574,11 +590,19 @@ for index, route in ipairs(routes) do
             return  
         end  
 
-        running = false  
-        runToken += 1  
+        running = false
+        runToken += 1
 
-        local myToken = runToken  
-        running = true  
+        if activeRouteButton then
+            activeRouteButton.Text = "PLAY: " .. activeRouteButton:GetAttribute("RouteName")
+        end
+
+        local myToken = runToken
+        running = true
+        activeRouteId = currentRoute.id
+        activeRouteButton = playButton
+        activeRouteButton:SetAttribute("RouteName", currentRoute.name)
+        playButton.Text = "STOP: " .. currentRoute.name
 
         status.Text = "Status: Running - " .. currentRoute.name  
 
@@ -705,6 +729,13 @@ end)
 stopButton.MouseButton1Click:Connect(function()
 running = false
 runToken += 1
+activeRouteId = nil
+
+if activeRouteButton then
+    activeRouteButton.Text = "PLAY: " .. activeRouteButton:GetAttribute("RouteName")
+    activeRouteButton = nil
+end
+
 status.Text = "Status: Auto teleport stopped"
 end)
 
